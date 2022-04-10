@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>OpentDB Quiz</title>
+    <link href="style.css" rel="stylesheet">
+</head>
+<body>
+<div class="quiz">
+    <h4 class="loading-text">Quiz is Loading Please wait...</h4>
+</div>
+
+<script crossorigin="anonymous"
+        integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4="
+        src="https://code.jquery.com/jquery-3.6.0.min.js">
+</script>
+
+<script>
+    /**
+     * For random shuffle of option array
+     * @param array
+     * @returns {*}
+     */
+    function shuffle(array) {
+        let currentIndex = array.length, randomIndex;
+
+        // While there remain elements to shuffle.
+        while (currentIndex !== 0) {
+            // Pick a remaining element.
+            randomIndex = Math.floor(Math.random() * currentIndex);
+            currentIndex--;
+            // And swap it with the current element.
+            [array[currentIndex], array[randomIndex]] = [
+                array[randomIndex], array[currentIndex]];
+        }
+
+        return array;
+    }
+
+    /**
+     * Store correct options with question as index...stating from 0
+     * @type {{}}
+     */
+    let correct_options = {};
+    fetch('https://opentdb.com/api.php?amount=10') //fetch returns promise -> we can create chain
+        .then(res => res.json()) // here we are converting promise result to JSON
+        .then(data => { //now fetching JSON here
+            /**
+            -If we see curly braces it means that is an object and can get values of that object with following method
+            -You can get values of JSON in 2 ways
+              1. Object dot(.)field name
+              2. Object['field name']
+            */
+
+            let results = data.results;
+            let quizselector = $('.quiz');
+
+            for (let i = 0; i < results.length; i++) {
+                let question = results[i].question;
+                quizselector.append(`<h1 data-index="${i}" class="question-title">${i + 1}). ${question}</h1>`);
+                let ulSelector = $(`<ol data-op="${i}">`);
+                let difficulty = results[i].difficulty;
+                quizselector.append(`<h3>${difficulty}</h3>`);
+
+                let options = [];
+
+                let correct_answer = results[i].correct_answer;
+                options.push(correct_answer);
+                correct_options[i] = correct_answer;
+                options.push(results[i].incorrect_answers);
+                options = shuffle(options);
+                for (let j = 0; j < options.length; j++) {
+                    ulSelector.append(`<li> ${options[j]}</li>`);
+                }
+                quizselector.append(ulSelector);
+            }
+
+            /**
+             * Check correct answers
+             */
+            $("li").click(function () {
+                let self = $(this); // store current clicked element
+                let question_index = self.parent().data('op'); // get question index
+                let option_text = self.text().trim(); // get question text
+                if (correct_options[question_index] === option_text) { // compare question text with option text
+                    self.css({'color': 'green', 'font-size': '20px'});
+                } else {
+                    self.css('color', 'red');
+                }
+            });
+
+            /**
+             * Remove loading text from DOM
+             */
+            $('.loading-text').remove();
+        })
+        .catch(error => {
+            console.log(error);
+        })
+</script>
+</body>
+</html>
